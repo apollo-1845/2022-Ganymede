@@ -17,18 +17,21 @@ def convert(angle):
 def capture(camera, image):
     point = ISS.coordinates()
 
-    south, exif_latitude = convert(point.latitude)
-    west, exif_longitude = convert(point.longitude)
-
+    s, latitude = convert(point.latitude)
+    w, longitude = convert(point.longitude)
+    
+    south = "north"
+    if s:
+        south = "south"
+    
+    west = "east"
+    if w:
+        west = "west"
+    
     t = timescale.now()
+    sunlight = False
     if ISS.at(t).is_sunlit(ephemeris):
-        camera.exif_tags['sunlight'] = True
-    else:
-        camera.exif_tags['sunlight'] = False
-
-    camera.exif_tags['GPS.GPSLatitude'] = exif_latitude
-    camera.exif_tags['GPS.GPSLatitudeRef'] = "S" if south else "N"
-    camera.exif_tags['GPS.GPSLongitude'] = exif_longitude
-    camera.exif_tags['GPS.GPSLongitudeRef'] = "W" if west else "E"
-
+        sunlight = True
+        
     camera.capture(image)
+    return longitude, latitude, south, west
