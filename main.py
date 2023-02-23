@@ -23,57 +23,34 @@ def takeImages():
     startTime = datetime.now()
     timeNow = datetime.now()
     i = 0
-    
-    array = []
-    while (timeNow < startTime + timedelta(seconds=10)):
+    #runs f
+    while (timeNow < startTime + timedelta(minutes=160)):
         path = f'{base_folder}/images/image_{i:03d}.jpg'
         #waits until the iss is in sunlight
         t = timescale.now()
-        #while ISS.at(t).is_sunlit(ephemeris) == False:
-            #t = timescale.now()
+        while ISS.at(t).is_sunlit(ephemeris) == False:
+            t = timescale.now()
         point = ISS.coordinates()
         coordinates = (point.latitude.degrees, point.longitude.degrees)
         country = coordinateToCountry(coordinates)
         camera.capture(path)
-        NDVIpath = f'{base_folder}/ndviImages/NDVIimage_{i:03d}.jpg'
-        NVDIVal = calculateNVDI(path, NDVIpath)
-        #adds the data to an array to save into a csv later
-        array.append([NVDIVal, coordinates, path, country])
+        #crops the image to remove the 'port' hole window border
+        img = cv2.imread(path)
+        x1 = 390
+        x2 = 2200
+        y1 = 390
+        y2 = 1560
+        img_cropped = img[x1:x2, y1:y2]
+        cv2.imwrite(img_cropped, path)
+        #immediately saves into a csv 
+        with open('data.csv', 'w') as csvfile:
+            filewriter = csv.writer(csvfile)
+            filewriter.writerow([coordinates, path, country])
         i = i + 1
-        sleep(0.5)
+        #waits ten seconds between each photo
+        sleep(7)
         timeNow = datetime.now()
-    return array
-
-#measuring plant health
-def increaseContrast(OGImage):
-    shape = OGImage.shape
-    height = int(shape[0] / 2)
-    width = int(shape[1] / 2)
-    OGImage = cv2.resize(OGImage, (width, height))
-    
-    inMinC = np.percentile(OGImage, 5) #min brightness in the image
-    inMaxC = np.percentile(OGImage, 95) #max brightness in the image
-
-    out_min = 0.0
-    out_max = 255.0
-
-    outputImage = OGImage - inMinC 
-    outputImage *= ((out_min - out_max) / (inMinC - inMaxC)) #multiply the image by the ration between the desired range of brightness by the actual range of brightness
-    outputImage += inMinC 
-
-    return outputImage
-
-def calculateNVDI(path, NDVIpath):
-    OGImageim = cv2.imread(path) #read the image
-    OGImage = np.array(OGImageim, dtype=float)/float(255) #convert into an array so maths can work
-    image = increaseContrast(OGImage)
-    b, _, r = cv2.split(image)
-    bottom = (r.astype(float) + b.astype(float))
-    bottom[bottom==0] = 0.01
-    ndvi = (b.astype(float) - r) / bottom
-    ndviImage = increaseContrast(ndvi)
-    cv2.imwrite(NDVIpath, ndviImage)
-    return NDVIpath
+    return
 
 #converts coordinates to the name of the country the coordinates correspond to
 def coordinateToCountry(coordinates):
@@ -81,14 +58,12 @@ def coordinateToCountry(coordinates):
     country = results[0]['cc']
     return country
 
-#argument is a 2d Array
-def convertToCSV(array):
-    with open('data.csv', 'w') as csvfile:
-        filewriter = csv.writer(csvfile)
-        filewriter.writerow(['NDVI', 'raw-coordinate', 'image-path', 'country'])
-        for i in range(0, len(array)):
-            filewriter.writerow([array[i][0], array[i][1], array[i][2], array[i][3]])
+#writes the csv headers
+with open('data.csv', 'w') as csvfile:
+    filewriter = csv.writer(csvfile)
+    filewriter.writerow(['raw-coordinate', 'image-path', 'country'])
 
-array = takeImages()
-print("images taken")#takes images for the duration of the flight 
-convertToCSV(array)
+#takes the images and saves them
+takeImages()
+
+#we will create ndvi images later in the analysis phase and compare that to the countries GDP. 
