@@ -45,9 +45,7 @@ def takeImages():
     return array
 
 #measuring plant health
-def increaseContrast(path):
-    OGImageim = cv2.imread(path) #read the image
-    OGImage = np.array(OGImageim, dtype=float)/float(255) #convert into an array so maths can work
+def increaseContrast(OGImage):
     shape = OGImage.shape
     height = int(shape[0] / 2)
     width = int(shape[1] / 2)
@@ -66,12 +64,15 @@ def increaseContrast(path):
     return outputImage
 
 def calculateNVDI(path, NDVIpath):
-    image = increaseContrast(path)
+    OGImageim = cv2.imread(path) #read the image
+    OGImage = np.array(OGImageim, dtype=float)/float(255) #convert into an array so maths can work
+    image = increaseContrast(OGImage)
     b, _, r = cv2.split(image)
     bottom = (r.astype(float) + b.astype(float))
     bottom[bottom==0] = 0.01
     ndvi = (b.astype(float) - r) / bottom
-    cv2.imwrite(NDVIpath, ndvi)
+    ndviImage = increaseContrast(ndvi)
+    cv2.imwrite(NDVIpath, ndviImage)
     return NDVIpath
 
 #converts coordinates to the name of the country the coordinates correspond to
