@@ -1,9 +1,7 @@
-from exif import Image
 import csv
 import reverse_geocoder as rg
 import cv2
 import numpy as np
-from exif import Image
 from picamera import PiCamera
 from pathlib import Path
 from time import sleep
@@ -36,6 +34,7 @@ def takeImages():
             country = coordinateToCountry(coordinates)
             camera.capture(path)
             try:
+                #crops image
                 img = cv2.imread(path)
                 x1 = 390
                 x2 = 2200
@@ -45,7 +44,7 @@ def takeImages():
                 cv2.imwrite(img_cropped, path)
             except:
                 pass
-            #adds the data to an array to save into a csv later
+            #saves data to csv
             with open('data.csv', 'w') as csvfile:
                 filewriter = csv.writer(csvfile)
                 filewriter.writerow([coordinates, path, country])
