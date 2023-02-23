@@ -10,6 +10,7 @@ from time import sleep
 from datetime import datetime, timedelta
 from orbit import ISS, ephemeris
 from skyfield.api import load
+from PIL import Image
 
 timescale = load.timescale()
 
@@ -35,6 +36,13 @@ def takeImages():
         coordinates = (point.latitude.degrees, point.longitude.degrees)
         country = coordinateToCountry(coordinates)
         camera.capture(path)
+        img = cv2.imread(path)
+        x1 = 390
+        x2 = 2200
+        y1 = 390
+        y2 = 1560
+        img_cropped = image[x1:x2, y1:y2]
+        cv2.imwrite(img_cropped, path)
         NDVIpath = f'{base_folder}/ndviImages/NDVIimage_{i:03d}.jpg'
         NVDIVal = calculateNVDI(path, NDVIpath)
         #adds the data to an array to save into a csv later
